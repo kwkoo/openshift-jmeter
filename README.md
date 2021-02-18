@@ -43,7 +43,7 @@ There are 2 ways to get test plans into the pod: through a source-to-image build
 
 ### Using source-to-image
 
-To get the test plan into the image using source-to-image (assuming you have deployed the demo),
+To get the test plan into the image using source-to-image,
 
 ```
 oc new-build \
