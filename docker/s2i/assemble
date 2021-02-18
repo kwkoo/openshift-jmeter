@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cp /tmp/src/*.jmx /opt/jmeter/testplan/

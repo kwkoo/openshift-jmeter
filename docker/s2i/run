@@ -1,0 +1,33 @@
+#!/bin/bash
+
+TRIGGER=/www/.run
+
+function run_plans {
+  rm -rf /www/*
+
+  for plan in $(ls /opt/jmeter/testplan/*.jmx); do
+    echo "processing ${plan}..."
+    base=$(basename -s .jmx $plan)
+    mkdir -p /www/${base}
+    jmeter \
+      -n \
+      -t $plan \
+      -l /www/${base}/results.jtl \
+      -e \
+      -o /www/${base}/dashboard
+  done
+
+  rm -f $TRIGGER
+}
+
+echo "waiting for trigger..."
+
+while true; do
+  if [ -e $TRIGGER ]; then
+    echo "triggered"
+    run_plans
+    echo "done running test plans"
+  else
+    sleep 5
+  fi
+done
