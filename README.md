@@ -41,16 +41,11 @@ The demo deploys a `jmeter` deploymentconfig and a test web server. A test plan 
 
 There are 2 ways to get test plans into the pod: through a source-to-image build or by mounting them as a configmap.
 
+### Using source-to-image
+
 To get the test plan into the image using source-to-image (assuming you have deployed the demo),
 
 ```
-oc project demo
-
-oc set volume \
-  --remove \
-  --name testplan \
-  dc/jmeter
-
 oc new-build \
   --name=my-jmeter \
   --binary \
@@ -61,15 +56,54 @@ oc start-build \
   --from-file=testplan/webserver.jmx \
   my-jmeter
 
-# Patch the deploymentconfig to use the new JMeter image
-oc patch \
-  dc/jmeter \
-  --type=json \
-  -p='[{"op":"replace","path":"/spec/triggers/1/imageChangeParams/from/name","value":"my-jmeter:latest"},{"op":"replace","path":"/spec/triggers/1/imageChangeParams/from/namespace","value":"demo"}]'
-
-oc set image dc/jmeter jmeter=my-jmeter:latest --source=imagestreamtag
-
-oc rollout latest dc/jmeter
+oc new-app \
+  -f jmeter_template.yaml \
+  -p NAMESPACE=$(oc project -q) \
+  -p IMAGESTREAMTAG=my-jmeter:latest
 ```
 
-To get the test plan to mount as a configmap, look at the `demo` target in the `Makefile`.
+### Using a configmap
+
+To get the test plan to mount as a configmap,
+
+1. Create the test plan as a configmap:
+
+	```
+	oc create cm testplan --from-file=testplan/webserver.jmx
+	oc label cm/testplan app=jmeter
+	```
+
+1. Provision JMeter:
+
+	```
+	oc new-app -f jmeter_template.yaml
+	```
+
+1. Mount the test plan:
+
+	```
+	oc set volume \
+	  dc/jmeter \
+	  --add \
+	  --name=testplan \
+	  -c jmeter \
+	  -t configmap \
+	  --configmap-name=testplan \
+	  -m /opt/jmeter/testplan
+	```
+
+
+### Uninstalling
+
+To remove the JMeter deployment,
+
+```
+oc delete all -l app=jmeter
+oc delete cm -l app=jmeter
+```
+
+To remove the JMeter imagestream,
+
+```
+oc delete -n openshift is/jmeter
+```

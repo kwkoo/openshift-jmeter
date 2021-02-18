@@ -1,0 +1,161 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+labels:
+  jws53: "1.0"
+  template: jmeter
+message: A new JMeter application has been created in your project.
+metadata:
+  annotations:
+    description: An example JBoss Web Server application. For more information about using this template, see https://github.com/jboss-openshift/application-templates.
+    iconClass: icon-java
+    openshift.io/display-name: JMeter
+    tags: jmeter
+    version: "1.0"
+  name: jmeter
+objects:
+- apiVersion: v1
+  data:
+    trigger: |-
+      #!/bin/bash
+
+      TRIGGER=/var/www/html/.run
+
+      echo "Content-type: text/plain"
+      echo
+      echo "OK"
+      touch $TRIGGER
+  kind: ConfigMap
+  metadata:
+    name: ${APPLICATION_NAME}-trigger
+    labels:
+      app: ${APPLICATION_NAME}
+- apiVersion: v1
+  data:
+    welcome.conf: |
+      # Intentionally left blank
+  kind: ConfigMap
+  metadata:
+    name: ${APPLICATION_NAME}-welcome
+    labels:
+      app: ${APPLICATION_NAME}
+- apiVersion: apps.openshift.io/v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: ${APPLICATION_NAME}
+      app.kubernetes.io/component: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
+  spec:
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      deploymentconfig: ${APPLICATION_NAME}
+    strategy:
+      activeDeadlineSeconds: 21600
+      resources: {}
+      rollingParams:
+        intervalSeconds: 1
+        maxSurge: 25%
+        maxUnavailable: 25%
+        timeoutSeconds: 600
+        updatePeriodSeconds: 1
+      type: Rolling
+    template:
+      metadata:
+        labels:
+          deploymentconfig: ${APPLICATION_NAME}
+      spec:
+        containers:
+        - image: image-registry.openshift-image-registry.svc:5000/${NAMESPACE}/${IMAGESTREAMTAG}
+          imagePullPolicy: Always
+          name: ${APPLICATION_NAME}
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /www
+            name: data
+        - image: image-registry.openshift-image-registry.svc:5000/openshift/httpd
+          imagePullPolicy: IfNotPresent
+          name: httpd
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          - containerPort: 8443
+            protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /var/www/cgi-bin/trigger
+            name: cgi
+            subPath: trigger
+          - mountPath: /etc/httpd/conf.d/welcome.conf
+            name: welcome
+            subPath: welcome.conf
+          - mountPath: /var/www/html
+            name: data
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - emptyDir: {}
+          name: data
+        - configMap:
+            defaultMode: 493
+            name: ${APPLICATION_NAME}-trigger
+          name: cgi
+        - configMap:
+            name: ${APPLICATION_NAME}-welcome
+          name: welcome
+    test: false
+    triggers:
+    - type: ConfigChange
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${APPLICATION_NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${IMAGESTREAMTAG}
+          namespace: ${NAMESPACE}
+      type: ImageChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${APPLICATION_NAME}
+      app.kubernetes.io/component: ${APPLICATION_NAME}
+      app.kubernetes.io/instance: ${APPLICATION_NAME}
+    name: ${APPLICATION_NAME}
+  spec:
+    ports:
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    - name: https
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    selector:
+      deploymentconfig: ${APPLICATION_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+parameters:
+- description: The name for the application.
+  displayName: Application Name
+  name: APPLICATION_NAME
+  required: true
+  value: jmeter
+- description: The OpenShift Namespace where the JMeter ImageStream resides.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
+- description: The ImageStream Tag of the JMeter ImageStream.
+  displayName: ImageStream Tag
+  name: IMAGESTREAMTAG
+  value: jmeter:latest

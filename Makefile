@@ -18,12 +18,17 @@ imagestream: cleanimagestream
 	  --from-dir=$(BASE)/docker \
 	  --follow \
 	  jmeter
+	oc delete -n openshift bc/jmeter
 
 cleanimagestream:
 	-oc delete -n openshift is/jmeter
-	-oc delete -n openshift bc/jmeter
 
 demo: cleandemo
+	@if [ `oc get istag/jmeter:latest -n openshift 2>/dev/null 1>/dev/null` -ne 0 ]; then \
+	  echo "jmeter imagestream has not been installed - run 'make imagestream' first"; \
+	  exit 1; \
+	fi
+
 	oc new-project $(PROJ) || oc project $(PROJ)
 
 	# Deploy demo test target
@@ -50,7 +55,7 @@ demo: cleandemo
 	  --from-file=$(BASE)/testplan/webserver.jmx
 	oc label cm/testplan -n $(PROJ) app=jmeter
 
-	oc create -n $(PROJ) -f $(BASE)/jmeter.yaml
+	oc new-app -n $(PROJ) -f $(BASE)/jmeter_template.yaml
 
 	oc set volume \
 	  dc/jmeter \
