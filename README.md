@@ -2,6 +2,9 @@
 
 This was derived from [Woh Shon's JMeter image](https://hub.docker.com/r/wohshon/jmeter).
 
+
+## Installing the imagestream
+
 To install the image on OpenShift, run
 
 ```
@@ -9,6 +12,9 @@ make imagestream
 ```
 
 This will create a `jmeter` imagestream in the `openshift` namespace. The image can be used as-is or it can be used as a source-to-image builder.
+
+
+## Installing the demo
 
 To deploy a demo, run
 
@@ -26,7 +32,12 @@ Once the pod is up, you can trigger JMeter to run by accessing `http://route.to.
 make trigger
 ```
 
-After the test has completed, the results will be available at `http://route.to.pod`.
+After the test has completed, the results will be available at `http://route.to.pod`. Run `make webserver` to open a web browser to the web server.
+
+The demo deploys a `jmeter` deploymentconfig and a test web server. A test plan runs a short HTTP test against the test web server. The test plan is created as a configmap and is mounted as a volume in the `jmeter` deploymentconfig.
+
+
+## Getting your test plans into the image
 
 There are 2 ways to get test plans into the pod: through a source-to-image build or by mounting them as a configmap.
 
