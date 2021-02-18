@@ -5,7 +5,7 @@ BASE:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 .PHONY: docker imagestream cleanimagestream demo cleandemo trigger webserver logs
 
 docker:
-	@docker build -t jmeter $(BASE)
+	@docker build -t jmeter $(BASE)/docker
 
 imagestream: cleanimagestream
 	oc new-build \

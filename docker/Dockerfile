@@ -50,9 +50,3 @@ RUN \
   chown 185:0 /usr/local/s2i/assemble /usr/local/s2i/run
 
 USER 185
-
-
-
-# not using this to expose a prompt for user to manually run the test plan, e.g: 
-# CMD ["jmeter", "-n", "-t", "/tmp/Fuse-TestPlan.jmx", "-l", "/tmp/results/results.jtl", "-e", "-o", "/tmp/db"]
-# run this after oc run > jmeter -n -t /opt/apache-jmeter-5.4.1/testplan/testplan.jmx -l /opt/apache-jmeter-5.4.1/results/result.jtl -e -o /opt/apache-jmeter-5.4.1/dashboard/
